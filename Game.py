@@ -83,7 +83,7 @@ def update_clock():
         time.time() is current ticks, subtracted from the last time
         the start button was pressed, plus whatever time we are at
          on the clock"""
-        now = int(120 - ((time.time() - startTime) + currTime))
+        now = int(121 - ((time.time() - startTime) + currTime))
         if (now != 0):
             minutes = int(now/60)
             seconds = now - (minutes*60)
@@ -93,8 +93,37 @@ def update_clock():
         else:
             clock.configure(text="GAME OVER")
             run = False
+           # DeclareVictor()
     else: #If not running currently, check back in 200ms
         root.after(200, update_clock)
+
+def update_auton_clock():
+    global run
+    global currTime
+    global startTime
+
+    if(run):
+        """now is how many seconds are left on the clock
+        time.time() is current ticks, subtracted from the last time
+        the start button was pressed, plus whatever time we are at
+         on the clock"""
+        now = int(20 - ((time.time() - startTime) + currTime))
+        if (now != 0):
+            minutes = int(now/60)
+            seconds = now - (minutes*60)
+            clock.configure(text=str(minutes) + " : " + str(seconds).zfill(2))
+            root.after(1000, update_auton_clock)
+            #After updating the clock, make a recursive call 1000ms later to update again.
+        else:
+            clock.configure(text="2:00")
+            currTime = 0
+            startTime = time.time()
+            update_clock()
+           # DeclareVictor()
+    else: #If not running currently, check back in 200ms
+        root.after(200, update_auton_clock)
+
+
 
 """
 Runs a routine to update the scores of each team.
@@ -164,6 +193,7 @@ def SoundManager():
         root.after(1000, SoundManager)
 
 
+
 #Define a tkinter GUI frame, get the screen resolution, then use it to set the size of the GUI.
 root = tkinter.Tk()
 
@@ -188,8 +218,8 @@ pic.place(x=0, y=0, relwidth=1, relheight=1)
 #Ratio to help resize the GUI parts to fit the screen size
 ratio = (screen_height*screen_width)/(768*1366)
 
-#Initialize the clock
-clock = Label(root, text="2:00", bg = "black", fg = "purple", font ="FranklinGothic " + str(int(50*ratio)) + " bold")
+#Initialize the clock0
+clock = Label(root, text="0:20", bg = "black", fg = "purple", font ="FranklinGothic " + str(int(50*ratio)) + " bold")
 clock.pack()
 clock.place(y = 1.2*screen_height/4, x = .8*screen_width/2)
 
@@ -209,7 +239,7 @@ JediText.pack()
 JediText.place(y = screen_height/8, x = 6*screen_width/8)
 
 #Start all the routines
-update_clock()
+update_auton_clock()
 updatePoints()
 SoundManager()
 root.mainloop()
