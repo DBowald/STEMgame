@@ -21,6 +21,7 @@ import tkinter
 from PIL import Image, ImageTk
 import time
 import serial
+import functools
 import random
 import pygame
 import os
@@ -49,6 +50,9 @@ global jediPoints
 jediPoints = 0
 global musicOn
 musicOn = False
+global flash
+flash = 0
+global winner
 
 global pylon1
 pylon1 = 0
@@ -83,7 +87,7 @@ def update_clock():
         time.time() is current ticks, subtracted from the last time
         the start button was pressed, plus whatever time we are at
          on the clock"""
-        now = int(121 - ((time.time() - startTime) + currTime))
+        now = int(201 - ((time.time() - startTime) + currTime))
         if (now != 0):
             minutes = int(now/60)
             seconds = now - (minutes*60)
@@ -93,7 +97,7 @@ def update_clock():
         else:
             clock.configure(text="GAME OVER")
             run = False
-           # DeclareVictor()
+            DeclareVictor()
     else: #If not running currently, check back in 200ms
         root.after(200, update_clock)
 
@@ -134,7 +138,6 @@ def updatePoints():
         global sithPoints
         global jediPoints
         val = ser.readline()
-        print(val)
         if(val[0] == 49 and pylon1 == 0): #49 is '1' in ascii(python reads unicode by default)
             pylon1 = 1
         elif(val[0] == 48 and pylon1 == 1):#only when it reads on after it was off does it add points
@@ -193,6 +196,43 @@ def SoundManager():
         root.after(1000, SoundManager)
 
 
+def DeclareVictor():
+    global jediPoints
+    global sithPoints
+    global winner
+    if(jediPoints > sithPoints):
+        clock.configure(text="JEDI WIN!", fg="blue")
+        winner = "Jedi"
+        FlashText()
+
+    elif(jediPoints < sithPoints):
+        clock.configure(text="SITH WIN!", fg = "red")
+        winner = "Sith"
+        FlashText()
+    else:
+        clock.configure(text="TIE!")
+
+def FlashText():
+    global flash
+    global winner
+    if(flash):
+        if(winner == "Jedi"):
+            JediText.configure(fg = "black")
+            flash = 0
+            root.after(700,FlashText)
+        else:
+            SithText.configure(fg = "black")
+            flash = 0
+            root.after(700,FlashText)
+    else:
+        if(winner == "Jedi"):
+            JediText.configure(fg = "blue")
+            flash = 1
+            root.after(700, FlashText)
+        else:
+            SithText.configure(fg = "red")
+            flash = 1
+            root.after(700, FlashText)
 
 #Define a tkinter GUI frame, get the screen resolution, then use it to set the size of the GUI.
 root = tkinter.Tk()
@@ -218,8 +258,8 @@ pic.place(x=0, y=0, relwidth=1, relheight=1)
 #Ratio to help resize the GUI parts to fit the screen size
 ratio = (screen_height*screen_width)/(768*1366)
 
-#Initialize the clock0
-clock = Label(root, text="0:20", bg = "black", fg = "purple", font ="FranklinGothic " + str(int(50*ratio)) + " bold")
+#Initialize the clock
+clock = Label(root, text="0 : 20", bg = "black", fg = "purple", font ="FranklinGothic " + str(int(50*ratio)) + " bold")
 clock.pack()
 clock.place(y = 1.2*screen_height/4, x = .8*screen_width/2)
 
