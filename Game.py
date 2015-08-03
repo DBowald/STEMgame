@@ -26,6 +26,7 @@ import random
 import pygame
 import os
 import sys
+import subprocess
 
 """
 Create and initialize all the variables that are used globally within the
@@ -55,7 +56,18 @@ flash = 0
 global winner
 
 global pylon1
-pylon1 = 0
+pylon1 = 'N'
+global pylon2
+pylon2 = 'N'
+global pylon3
+pylon3 = 'N'
+global pylon4
+pylon4 = 'N'
+global pylon5
+pylon5 = 'N'
+
+
+
 
 """
 Class to initialize and create the GUI
@@ -87,7 +99,7 @@ def update_clock():
         time.time() is current ticks, subtracted from the last time
         the start button was pressed, plus whatever time we are at
          on the clock"""
-        now = int(201 - ((time.time() - startTime) + currTime))
+        now = int(121 - ((time.time() - startTime) + currTime))
         if (now != 0):
             minutes = int(now/60)
             seconds = now - (minutes*60)
@@ -97,6 +109,8 @@ def update_clock():
         else:
             clock.configure(text="GAME OVER")
             run = False
+            ser.write(3)
+            scoreEndgame()
             DeclareVictor()
     else: #If not running currently, check back in 200ms
         root.after(200, update_clock)
@@ -122,6 +136,7 @@ def update_auton_clock():
             clock.configure(text="2:00")
             currTime = 0
             startTime = time.time()
+            ser.write(2)
             update_clock()
            # DeclareVictor()
     else: #If not running currently, check back in 200ms
@@ -132,27 +147,20 @@ def update_auton_clock():
 """
 Runs a routine to update the scores of each team.
 """
-def updatePoints():
+def scorePylons(pylon, captor):
     if(run):
-        global pylon1
         global sithPoints
         global jediPoints
-        val = ser.readline()
-        if(val[0] == 49 and pylon1 == 0): #49 is '1' in ascii(python reads unicode by default)
-            pylon1 = 1
-        elif(val[0] == 48 and pylon1 == 1):#only when it reads on after it was off does it add points
-            pylon1 = 0
+
+        if(captor == 'B' and pylon != 'B'): #49 is '1' in ascii(python reads unicode by default)
+            jediPoints += 20
+        elif(captor == 'R' and pylon != 'R'): #49 is '1' in ascii(python reads unicode by default)
             sithPoints += 20
-        #Random points generator for connection issues/debugging
-        #val = random.randrange(0,11)
-        #jediPoints += val
-        #JediText.configure(text="JEDI\n" + str(jediPoints))
-        #val = random.randrange(0,11)
-        #sithPoints += val
-        SithText.configure(text="SITH\n" + str(sithPoints))
-        root.after(100, updatePoints) #recursively updates every 100ms
-    else:
-        root.after(100, updatePoints) #If the run flag is set to false, basically just wait
+        else:
+            pass
+
+        updatePoints()
+
 
 """
 Sets the run flag to True (start) or False(stop), and changes the button text
@@ -162,17 +170,24 @@ def StartStop():
     global run
     global startTime
     global currTime
+    global musicOn
 
     if(startButton["text"] == "Start"):
         run = True
+        #musicOn = True
         startButton.configure(text="Stop", bg="red")
         startTime = time.time() #Set a new start time
+        ser.write(4)
+        if(currTime == 0):
+            ser.write(1)
     else:
         run = False
+       # musicOn = False
         startButton.configure(text="Start",bg="green")
         currTime = int((time.time() - startTime) + currTime)
         #Saves the elapsed time, so that the timer can still work
         # even after being stopped for awhile.
+        ser.write(5)
 
 """
 |Work in progress|
@@ -191,9 +206,12 @@ def SoundManager():
             musicOn = True
         else:
             pass
+            #pygame.mixer.pause
     else:
         pygame.mixer.pause
         root.after(1000, SoundManager)
+
+
 
 
 def DeclareVictor():
@@ -234,8 +252,81 @@ def FlashText():
             flash = 1
             root.after(700, FlashText)
 
+def ReadInSerial():
+    if(run):
+        command = ser.readline()
+        if(len(command) == 1):
+            if(command[0] == 1): #Begin auton/match(written TO arduino as soon as start button is first pressed)
+                pass
+            elif(command[0] == 2): #Begin manual(written TO arduino right after auton ends)
+                pass
+            elif(command[0] == 3): #End of game(written TO arduino right before the victor is declared)
+                pass
+            elif(command[0] == 4): #Start(written TO arduino whenever GUI button is pressed)
+                pass
+            elif(command[0] == 5): #Stop(written TO arduino whenever GUI button is pressed)
+                pass
+            elif(command[1] == 6): #Scoring the pylons at the end
+                pass
+            else:
+                pass
+        elif(len(command) == 2):
+            if(command[1] == 7): #Control of Pylon1 has changed
+                global pylon1
+                makeSound()
+                scorePylons(pylon1,command[0])
+                pylon1 = command[0]
+            elif(command[1] == 8): #Control of Pylon2 has changed
+                global pylon2
+                makeSound()
+                scorePylons(pylon2,command[0])
+                pylon2 = command[0]
+            elif(command[1] == 9): #Control of Pylon3 has changed
+                global pylon3
+                makeSound()
+                scorePylons(pylon3,command[0])
+                pylon3 = command[0]
+            elif(command[1] == 10): #Control of Pylon4 has changed
+                global pylon4
+                makeSound()
+                scorePylons(pylon4,command[0])
+                pylon4 = command[0]
+            elif(command[1] == 11): #Control of Pylon5 has changed
+                global pylon5
+                makeSound()
+                scorePylons(pylon5,command[0])
+                pylon5 = command[0]
+        root.after(1000, ReadInSerial)
+    else:
+        root.after(1000, ReadInSerial)
+
+def scoreEndgame():
+    i = 1
+    pylonChar = 'N'
+    while(i <= 5):
+        exec("pylonChar = pylon" + i)
+        if(pylonChar == 'B'):
+            jediPoints += 100
+        elif(pylonChar == 'R'):
+            sithPoints += 100
+        i += 1
+    updatePoints()
+
+def updatePoints():
+    SithText.configure(text="SITH\n" + str(sithPoints))
+    JediText.configure(text="JEDI\n" + str(jediPoints))
+
+def makeSound():
+    randNum = random.randrange(0,31)
+    f = open('/soundboard_game/soundshot', 'a')
+    f.write(randNum)
+    f.close()
+
+
 #Define a tkinter GUI frame, get the screen resolution, then use it to set the size of the GUI.
 root = tkinter.Tk()
+
+subprocess.call(['/soundboard_game/turreted.sh'])
 
 #Read in data from the serial port- '/dev/tty should be changed to whatever
 #  COM port you plan on using
@@ -280,6 +371,5 @@ JediText.place(y = screen_height/8, x = 6*screen_width/8)
 
 #Start all the routines
 update_auton_clock()
-updatePoints()
 SoundManager()
 root.mainloop()

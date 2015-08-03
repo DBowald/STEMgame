@@ -1,0 +1,4 @@
+#!/bin/sh
+do; 
+for f in *.c; do echo "Processing $f file.."; done
+

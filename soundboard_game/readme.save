@@ -1,0 +1,7 @@
+$ for f in *.c; do echo "Processing $f file.."; done
+
+play these with (command line) 
+
+aplay file.wav
+
+

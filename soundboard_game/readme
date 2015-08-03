@@ -1,0 +1,62 @@
+play these with (command line) 
+
+the basic playback command is: 
+aplay file.wav
+but aplay does not play some of the files that are advertised as .wav but are apparently mpgs in a .wav wrapper or something like that. SO use
+mplayer file.wav
+instead! 
+
+The files: 
+
+turretted.sh
+  a script that runs as a loop and periodically executed turrettes.sh 
+This is the main file to invoke when running turrettes in teh background with another program writting numbers into "soundshot"
+
+turrettes.sh 
+  Reads the contents (a single decimal number) of the file 
+"soundshot" and plays that one (in the order) sound file, one time. 
+There are 30 soundclips. It also clears the soundshot file. 
+
+play_serially_all.sh
+  Is just for testing...loops through and plays all .wav files serially. 
+
+
+==============================================================
+
+alerted.wav
+chewy_roar.wav
+disturbence.wav
+dontlike.wav
+failed.wav
+fly1.wav
+fly2.wav
+fly3.wav
+forceisstrong.wav
+forcestrong.wav
+force.wav
+hansolo_badfeeling.wav
+hansolo_situation.wav
+junk
+learn.wav
+luke_junk.wav
+play_serially_all.sh
+r2d2_01.wav
+R2D2-do.wav
+R2D2-hey-you.wav
+r2-d2.wav
+R2d2.wav
+R2D2-yeah.wav
+readme
+saberon.wav
+soundshot
+swclear.wav
+swfaith.wav
+swluke01.wav
+swnotry.wav
+swvader01.wav
+swvader02.wav
+technical.wav
+turrettes.sh
+yodalaughing.wav
+your_father.wav
+
