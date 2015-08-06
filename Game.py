@@ -71,6 +71,17 @@ blueTotalPylons = 0
 global redTotalPylons
 redTotalPylons = 0
 
+global pylon1CD
+pylon1CD = False
+global python2CD
+pylon2CD = False
+global python3CD
+pylon3CD = False
+global python4CD
+pylon4CD = False
+global python5CD
+pylon5CD = False
+
 global blueLaser1
 blueLaser1 = False
 global blueLaser2
@@ -188,14 +199,24 @@ def update_auton_clock():
 """
 Runs a routine to update the scores of each team.
 """
-def scorePylons(pylon, captor):
+def scorePylons(pylon, pylonNum, captor):
     if(run):
         global sithPoints
         global jediPoints
         global redTotalPylons
         global blueTotalPylons
         if(captor == 'B' and pylon != 'B'):
-            jediPoints += 20
+            if(pylonNum == 1):
+                jediPoints += 3
+            if(pylonNum == 2):
+                jediPoints += 5
+            if(pylonNum == 3):
+                jediPoints += 4
+            if(pylonNum == 4):
+                jediPoints += 7
+            if(pylonNum == 5):
+                jediPoints += 7
+
             blueTotalPylons += 1
             if(pylon == 'R'):
                 redTotalPylons -= 1
@@ -241,9 +262,6 @@ def StartStop():
         #Saves the elapsed time, so that the timer can still work
         # even after being stopped for awhile.
         ser.write(b'5')
-
-
-
 
 def DeclareVictor():
     global jediPoints
@@ -292,6 +310,7 @@ def FlashText():
 def ReadInSerial():
     if(run):
         command = ser.readline()
+        print(command)
         if(len(command) == 3):
             if(command[0]) == 0: #Open doors (written TO arduino)
                 pass
@@ -315,30 +334,52 @@ def ReadInSerial():
                 pass
         elif(len(command) == 4):
             if(command[1] == 7): #Control of Pylon1 has changed
-                global pylon1
-                makeSound(7)
-                scorePylons(pylon1,chr(command[0]))
-                pylon1 = chr(command[0])
+                global pylon1CD
+                if(not pylon1CD):
+                    global pylon1
+                    makeSound(7)
+                    scorePylons(pylon1,1,chr(command[0]))
+                    pylon1 = chr(command[0])
+                    pylon1CD = True
+                    root.after(10000, resetPylon1CD)
+
             elif(command[1] == 8): #Control of Pylon2 has changed
-                global pylon2
-                makeSound(8)
-                scorePylons(pylon2,chr(command[0]))
-                pylon2 = chr(command[0])
+                print("made it here")
+                global pylon2CD
+                if(not pylon2CD):
+                    global pylon2
+                    makeSound(8)
+                    scorePylons(pylon2,2,chr(command[0]))
+                    pylon2 = chr(command[0])
+                    pylon2CD = True
+                    root.after(10000, resetPylon2CD)
             elif(command[1] == 9): #Control of Pylon3 has changed
-                global pylon3
-                makeSound(9)
-                scorePylons(pylon3,chr(command[0]))
-                pylon3 = chr(command[0])
+                global pylon3CD
+                if(not pylon3CD):
+                    global pylon3
+                    makeSound(9)
+                    scorePylons(pylon3,3,chr(command[0]))
+                    pylon3 = chr(command[0])
+                    pylon3CD = True
+                    root.after(10000, resetPylon3CD)
             elif(command[1] == 10): #Control of Pylon4 has changed
-                global pylon4
-                makeSound(10)
-                scorePylons(pylon4,chr(command[0]))
-                pylon4 = chr(command[0])
+                global pylon4CD
+                if(not pylon4CD):
+                    global pylon4
+                    makeSound(10)
+                    scorePylons(pylon4,4,chr(command[0]))
+                    pylon4 = chr(command[0])
+                    pylon4CD = True
+                    root.after(10000, resetPylon4CD)
             elif(command[1] == 11): #Control of Pylon5 has changed
-                global pylon5
-                makeSound(11)
-                scorePylons(pylon5,chr(command[0]))
-                pylon5 = chr(command[0])
+                global pylon5CD
+                if(not pylon5CD):
+                    global pylon5
+                    makeSound(11)
+                    scorePylons(pylon5,5,chr(command[0]))
+                    pylon5 = chr(command[0])
+                    pylon5CD = True
+                    root.after(10000, resetPylon5CD)
             elif(command[1] == 12):
                 makeSound(12)
                 scoreLaser1(chr(command[0]))
@@ -349,23 +390,29 @@ def ReadInSerial():
     else:
         root.after(1000, ReadInSerial)
 
-def garagePoints(team):
-
-
-def updateGarage():
+def garagePoints():
+    global redGarage
+    global blueGarage
+    global blueTotalPylons
+    global redTotalPylons
     if(run):
-        if(blueTotalPylons >= 3):
-            garagePoints('B')
-            blueGarage
-        else:
-            pass
-        elif(redTotalPylons >= 3):
-            garagePoints('R')
+        if(blueTotalPylons >= 3 and (not blueGarage)):
+            ser.write(b'14')
+            blueGarage = True
+        elif(redTotalPylons >= 3 and (not redGarage) ):
+            ser.write(b'15')
+            redGarage = True
+        if(blueTotalPylons < 3 and blueGarage):
+            ser.write(b'14')
+            blueGarage = False
+        elif(redTotalPylons < 3 and redGarage):
+            ser.write(b'15')
+            redGarage = False
 
 def scoreEndgame():
     global jediPoints
     global sithPoints
-    POINTS = 40
+    POINTS = 10
     if(pylon1 == 'B'):
         jediPoints += POINTS
     elif(pylon1 == 'R'):
@@ -457,6 +504,26 @@ def scoreLaser2(team):
             if(redLaser2 == False):
                 sithPoints += 100
                 redLaser2 = True
+
+def resetPylon1CD():
+    global pylon1CD
+    pylon1CD = False
+
+def resetPylon2CD():
+    global pylon2CD
+    pylon2CD = False
+
+def resetPylon3CD():
+    global pylon3CD
+    pylon3CD = False
+
+def resetPylon4CD():
+    global pylon4CD
+    pylon4CD = False
+
+def resetPylon5CD():
+    global pylon5CD
+    pylon5CD = False
 
 #Define a tkinter GUI frame, get the screen resolution, then use it to set the size of the GUI.
 root = tkinter.Tk()
