@@ -24,6 +24,7 @@ import serial
 import functools
 import random
 import pygame
+
 import os
 import sys
 import subprocess
@@ -65,10 +66,37 @@ global pylon4
 pylon4 = 'N'
 global pylon5
 pylon5 = 'N'
+global blueTotalPylons
+blueTotalPylons = 0
+global redTotalPylons
+redTotalPylons = 0
 
+global blueLaser1
+blueLaser1 = False
+global blueLaser2
+blueLaser2 = False
+global redLaser1
+redLaser1 = False
+global redLaser2
+redLaser2 = False
 
+global redGarage
+redGarage = False
+global blueGarage
+blueGarage = False
 
+global auton
+auton = False
 
+musicLibrary = {1:"Cantina.mp3", 2: "DuelOfTheFates.mp3", 3: "ImperialAttack.mp3",
+                4:"MainTheme.mp3", 5:"MoistureFarm.mp3"}
+
+soundLibrary = {0:"airhorn.wav", 1: "alerted.wav", 2:"chewy_roar.wav", 3: "disturbence.wav", 4:"dontlike.wav", 5:"your_father.wav",
+                6: "fly1.wav", 7:"fly2.wav", 8: "fly3.wav", 9:"force.wav", 10:"forceisstrong.wav",
+                11: "forcestrong.wav", 12:"hansolo_badfeeling.wav", 13: "hansolo_situation.wav", 14:"learn.wav", 15:"luke_junk.wav",
+                16: "r2-d2.wav", 17:"R2d2.wav", 18: "R2D2-do.wav", 19:"R2D2-hey-you.wav", 20:"R2D2-yeah.wav",
+                21: "r2d2_01.wav", 22:"saberon.wav", 23: "swclear.wav", 24:"swfaith.wav", 25:"swluke01.wav",
+                26: "swnotry.wav", 27:"swvader01.wav", 28: "swvader02.wav", 29:"technical.wav", 30:"your_father.wav", 31:"yodalaughing.wav"}
 """
 Class to initialize and create the GUI
 """
@@ -109,7 +137,8 @@ def update_clock():
         else:
             clock.configure(text="GAME OVER")
             run = False
-            ser.write(3)
+            ser.write(b'3')
+            makeSound(3)
             scoreEndgame()
             DeclareVictor()
     else: #If not running currently, check back in 200ms
@@ -119,6 +148,8 @@ def update_auton_clock():
     global run
     global currTime
     global startTime
+    global auton
+    auton = True
 
     if(run):
         """now is how many seconds are left on the clock
@@ -133,12 +164,22 @@ def update_auton_clock():
             root.after(1000, update_auton_clock)
             #After updating the clock, make a recursive call 1000ms later to update again.
         else:
+            global blueLaser1
+            global blueLaser2
+            global redLaser1
+            global redLaser2
+            blueLaser1 = False
+            blueLaser2 = False
+            redLaser1 = False
+            redLaser2 = False
             clock.configure(text="2:00")
             currTime = 0
             startTime = time.time()
-            ser.write(2)
+            ser.write(b'2')
+            makeSound(2)
+            auton = False
+
             update_clock()
-           # DeclareVictor()
     else: #If not running currently, check back in 200ms
         root.after(200, update_auton_clock)
 
@@ -151,11 +192,18 @@ def scorePylons(pylon, captor):
     if(run):
         global sithPoints
         global jediPoints
-
-        if(captor == 'B' and pylon != 'B'): #49 is '1' in ascii(python reads unicode by default)
+        global redTotalPylons
+        global blueTotalPylons
+        if(captor == 'B' and pylon != 'B'):
             jediPoints += 20
-        elif(captor == 'R' and pylon != 'R'): #49 is '1' in ascii(python reads unicode by default)
+            blueTotalPylons += 1
+            if(pylon == 'R'):
+                redTotalPylons -= 1
+        elif(captor == 'R' and pylon != 'R'):
             sithPoints += 20
+            redTotalPylons += 1
+            if(pylon == 'B'):
+                blueTotalPylons -= 1
         else:
             pass
 
@@ -174,42 +222,25 @@ def StartStop():
 
     if(startButton["text"] == "Start"):
         run = True
-        #musicOn = True
+        if(musicOn):
+            pygame.mixer.music.unpause()
+        else:
+            pygame.mixer.music.play()
         startButton.configure(text="Stop", bg="red")
         startTime = time.time() #Set a new start time
-        ser.write(4)
+        ser.write(b'4')
         if(currTime == 0):
-            ser.write(1)
+            ser.write(b'1')
+        musicOn = True
+
     else:
         run = False
-       # musicOn = False
+        pygame.mixer.music.pause()
         startButton.configure(text="Start",bg="green")
         currTime = int((time.time() - startTime) + currTime)
         #Saves the elapsed time, so that the timer can still work
         # even after being stopped for awhile.
-        ser.write(5)
-
-"""
-|Work in progress|
-"""
-def SoundManager():
-    global run
-    if(run):
-        global musicOn
-        if(not musicOn):
-            file = 'Cantina.mp3'
-            pygame.init()
-            pygame.mixer.init()
-            pygame.mixer.music.load(file)
-            pygame.mixer.music.play()
-            root.after(1000, SoundManager)
-            musicOn = True
-        else:
-            pass
-            #pygame.mixer.pause
-    else:
-        pygame.mixer.pause
-        root.after(1000, SoundManager)
+        ser.write(b'5')
 
 
 
@@ -221,11 +252,17 @@ def DeclareVictor():
     if(jediPoints > sithPoints):
         clock.configure(text="JEDI WIN!", fg="blue")
         winner = "Jedi"
+        pygame.mixer.music.fadeout(1000)
+        pygame.mixer.music.load("JediVictory.mp3")
+        pygame.mixer.music.play()
         FlashText()
 
     elif(jediPoints < sithPoints):
         clock.configure(text="SITH WIN!", fg = "red")
         winner = "Sith"
+        pygame.mixer.music.fadeout(1000)
+        pygame.mixer.music.load("ImperialMarch.mp3")
+        pygame.mixer.music.play()
         FlashText()
     else:
         clock.configure(text="TIE!")
@@ -255,7 +292,9 @@ def FlashText():
 def ReadInSerial():
     if(run):
         command = ser.readline()
-        if(len(command) == 1):
+        if(len(command) == 3):
+            if(command[0]) == 0: #Open doors (written TO arduino)
+                pass
             if(command[0] == 1): #Begin auton/match(written TO arduino as soon as start button is first pressed)
                 pass
             elif(command[0] == 2): #Begin manual(written TO arduino right after auton ends)
@@ -266,71 +305,167 @@ def ReadInSerial():
                 pass
             elif(command[0] == 5): #Stop(written TO arduino whenever GUI button is pressed)
                 pass
-            elif(command[1] == 6): #Scoring the pylons at the end
+            elif(command[0] == 6): #Scoring the pylons at the end
+                pass
+            elif(command[0] == 14): #write open blue doors
+                pass
+            elif(command[0] == 15): #write red doors open
                 pass
             else:
                 pass
-        elif(len(command) == 2):
+        elif(len(command) == 4):
             if(command[1] == 7): #Control of Pylon1 has changed
                 global pylon1
-                makeSound()
-                scorePylons(pylon1,command[0])
-                pylon1 = command[0]
+                makeSound(7)
+                scorePylons(pylon1,chr(command[0]))
+                pylon1 = chr(command[0])
             elif(command[1] == 8): #Control of Pylon2 has changed
                 global pylon2
-                makeSound()
-                scorePylons(pylon2,command[0])
-                pylon2 = command[0]
+                makeSound(8)
+                scorePylons(pylon2,chr(command[0]))
+                pylon2 = chr(command[0])
             elif(command[1] == 9): #Control of Pylon3 has changed
                 global pylon3
-                makeSound()
-                scorePylons(pylon3,command[0])
-                pylon3 = command[0]
+                makeSound(9)
+                scorePylons(pylon3,chr(command[0]))
+                pylon3 = chr(command[0])
             elif(command[1] == 10): #Control of Pylon4 has changed
                 global pylon4
-                makeSound()
-                scorePylons(pylon4,command[0])
-                pylon4 = command[0]
+                makeSound(10)
+                scorePylons(pylon4,chr(command[0]))
+                pylon4 = chr(command[0])
             elif(command[1] == 11): #Control of Pylon5 has changed
                 global pylon5
-                makeSound()
-                scorePylons(pylon5,command[0])
-                pylon5 = command[0]
+                makeSound(11)
+                scorePylons(pylon5,chr(command[0]))
+                pylon5 = chr(command[0])
+            elif(command[1] == 12):
+                makeSound(12)
+                scoreLaser1(chr(command[0]))
+            elif(command[1] == 13):
+                makeSound(13)
+                scoreLaser2(chr(command[0]))
         root.after(1000, ReadInSerial)
     else:
         root.after(1000, ReadInSerial)
 
+def garagePoints(team):
+
+
+def updateGarage():
+    if(run):
+        if(blueTotalPylons >= 3):
+            garagePoints('B')
+            blueGarage
+        else:
+            pass
+        elif(redTotalPylons >= 3):
+            garagePoints('R')
+
 def scoreEndgame():
-    i = 1
-    pylonChar = 'N'
-    while(i <= 5):
-        exec("pylonChar = pylon" + i)
-        if(pylonChar == 'B'):
-            jediPoints += 100
-        elif(pylonChar == 'R'):
-            sithPoints += 100
-        i += 1
+    global jediPoints
+    global sithPoints
+    POINTS = 40
+    if(pylon1 == 'B'):
+        jediPoints += POINTS
+    elif(pylon1 == 'R'):
+        sithPoints += POINTS
+    if(pylon2 == 'B'):
+        jediPoints += POINTS
+    elif(pylon2 == 'R'):
+        sithPoints += POINTS
+    if(pylon3 == 'B'):
+        jediPoints += POINTS
+    elif(pylon3 == 'R'):
+        sithPoints += POINTS
+    if(pylon4 == 'B'):
+        jediPoints += POINTS
+    elif(pylon4 == 'R'):
+        sithPoints += POINTS
+    if(pylon5 == 'B'):
+        jediPoints += POINTS
+    elif(pylon5 == 'R'):
+        sithPoints += POINTS
     updatePoints()
 
 def updatePoints():
     SithText.configure(text="SITH\n" + str(sithPoints))
     JediText.configure(text="JEDI\n" + str(jediPoints))
 
-def makeSound():
-    randNum = random.randrange(0,31)
-    f = open('/soundboard_game/soundshot', 'a')
-    f.write(randNum)
-    f.close()
+def makeSound(event):
+    if(event >= 7 and event <= 11):
+        randNum = random.randrange(1,12)
+        file = "soundboard_game/" + soundLibrary.get(randNum)
+        sound = pygame.mixer.Sound(file)
+        sound.play()
+    elif(event >= 1 and event <= 3):
+        file = "soundboard_game/" + soundLibrary.get(0)
+        sound = pygame.mixer.Sound(file)
+        sound.play()
+    elif(event == 12 or event == 13):
+        sound = pygame.mixer.Sound("LaserInterrupt.wav")
+        sound.play()
 
+def initSound():
+    randNum = random.randrange(1,6)
+    file = musicLibrary.get(randNum)
+    pygame.init()
+    pygame.mixer.init()
+    pygame.mixer.music.load(file)
+
+def scoreLaser1(team):
+    global auton
+    global blueLaser1
+    global redLaser1
+
+    global jediPoints
+    global sithPoints
+
+    if(auton):
+        if(team == 'B'):
+           if(blueLaser1 == False):
+                jediPoints += 20
+                blueLaser1 = True
+                ser.write(b'14')
+
+        elif(team == 'R'):
+            if(redLaser1 == False):
+                sithPoints += 20
+                redLaser1 = True
+                ser.write(b'15')
+    else:
+        if(team == 'B'):
+            if(blueLaser1 == False):
+                jediPoints += 200
+                blueLaser1 = True
+        elif(team == 'R'):
+            if(redLaser1 == False):
+                sithPoints += 200
+                redLaser1 = True
+
+def scoreLaser2(team):
+    global auton
+    global blueLaser2
+    global redLaser2
+
+    if(auton):
+        if(team == 'B'):
+           if(blueLaser2 == False):
+                jediPoints += 100
+                blueLaser2 = True
+        elif(team == 'R'):
+            if(redLaser2 == False):
+                sithPoints += 100
+                redLaser2 = True
 
 #Define a tkinter GUI frame, get the screen resolution, then use it to set the size of the GUI.
 root = tkinter.Tk()
 
-subprocess.call(['/soundboard_game/turreted.sh'])
+#subprocess.call(['soundboard_game/turretted.sh'])
 
 #Read in data from the serial port- '/dev/tty should be changed to whatever
 #  COM port you plan on using
-ser = serial.Serial('/dev/ttyUSB0', 9600)
+ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=0)
 
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
@@ -371,5 +506,6 @@ JediText.place(y = screen_height/8, x = 6*screen_width/8)
 
 #Start all the routines
 update_auton_clock()
-SoundManager()
+initSound()
+ReadInSerial()
 root.mainloop()
