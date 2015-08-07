@@ -82,15 +82,6 @@ pylon4CD = False
 global python5CD
 pylon5CD = False
 
-global blueLaser1
-blueLaser1 = False
-global blueLaser2
-blueLaser2 = False
-global redLaser1
-redLaser1 = False
-global redLaser2
-redLaser2 = False
-
 global redGarage
 redGarage = False
 global blueGarage
@@ -98,6 +89,17 @@ blueGarage = False
 
 global auton
 auton = False
+
+global bluePenalty
+bluePenalty = 0
+
+global redPenalty
+redPenalty = 0
+
+global redLaserCount
+redLaserCount = 0
+global blueLaserCount
+blueLaserCount = 0
 
 musicLibrary = {1:"Cantina.mp3", 2: "DuelOfTheFates.mp3", 3: "ImperialAttack.mp3",
                 4:"MainTheme.mp3", 5:"MoistureFarm.mp3"}
@@ -175,14 +177,10 @@ def update_auton_clock():
             root.after(1000, update_auton_clock)
             #After updating the clock, make a recursive call 1000ms later to update again.
         else:
-            global blueLaser1
-            global blueLaser2
-            global redLaser1
-            global redLaser2
-            blueLaser1 = False
-            blueLaser2 = False
-            redLaser1 = False
-            redLaser2 = False
+            global blueLaserCount
+            global redLaserCount
+            blueLaserCount = 0
+            redLaserCount = 0
             clock.configure(text="2:00")
             currTime = 0
             startTime = time.time()
@@ -221,7 +219,17 @@ def scorePylons(pylon, pylonNum, captor):
             if(pylon == 'R'):
                 redTotalPylons -= 1
         elif(captor == 'R' and pylon != 'R'):
-            sithPoints += 20
+            if(pylonNum == 1):
+                sithPoints += 3
+            if(pylonNum == 2):
+                sithPoints += 5
+            if(pylonNum == 3):
+                sithPoints += 4
+            if(pylonNum == 4):
+                sithPoints += 7
+            if(pylonNum == 5):
+                sithPoints += 7
+
             redTotalPylons += 1
             if(pylon == 'B'):
                 blueTotalPylons -= 1
@@ -326,9 +334,31 @@ def ReadInSerial():
                 pass
             elif(command[0] == 6): #Scoring the pylons at the end
                 pass
-            elif(command[0] == 14): #write open blue doors
+            elif(command[0] == 14): #write open blue doors start
                 pass
-            elif(command[0] == 15): #write red doors open
+            elif(command[0] == 15): #write red doors open start
+                pass
+            elif(command[0] == 16): #write open blue doors end
+                pass
+            elif(command[0] == 17): #write red doors open end
+                pass
+            elif(command[0] == 18): #write open blue doors start
+                pass
+            elif(command[0] == 19): #write red doors open start
+                pass
+            elif(command[0] == 20): #write open blue doors end
+                pass
+            elif(command[0] == 21): #write red doors open end
+                pass
+            elif(command[0] == 22):
+                pass
+            elif(command[0] == 23):
+                pass
+            elif(command[0] == 24):
+                pass
+            elif(command[0] == 25):
+                pass
+            elif(command[0] == 26):
                 pass
             else:
                 pass
@@ -341,6 +371,7 @@ def ReadInSerial():
                     scorePylons(pylon1,1,chr(command[0]))
                     pylon1 = chr(command[0])
                     pylon1CD = True
+                    CDPylon1()
                     root.after(10000, resetPylon1CD)
 
             elif(command[1] == 8): #Control of Pylon2 has changed
@@ -352,6 +383,7 @@ def ReadInSerial():
                     scorePylons(pylon2,2,chr(command[0]))
                     pylon2 = chr(command[0])
                     pylon2CD = True
+                    CDPylon2()
                     root.after(10000, resetPylon2CD)
             elif(command[1] == 9): #Control of Pylon3 has changed
                 global pylon3CD
@@ -361,6 +393,7 @@ def ReadInSerial():
                     scorePylons(pylon3,3,chr(command[0]))
                     pylon3 = chr(command[0])
                     pylon3CD = True
+                    CDPylon3()
                     root.after(10000, resetPylon3CD)
             elif(command[1] == 10): #Control of Pylon4 has changed
                 global pylon4CD
@@ -371,6 +404,7 @@ def ReadInSerial():
                     pylon4 = chr(command[0])
                     pylon4CD = True
                     root.after(10000, resetPylon4CD)
+                    CDPylon4()
             elif(command[1] == 11): #Control of Pylon5 has changed
                 global pylon5CD
                 if(not pylon5CD):
@@ -379,34 +413,36 @@ def ReadInSerial():
                     scorePylons(pylon5,5,chr(command[0]))
                     pylon5 = chr(command[0])
                     pylon5CD = True
+                    CDPylon5()
                     root.after(10000, resetPylon5CD)
             elif(command[1] == 12):
                 makeSound(12)
-                scoreLaser1(chr(command[0]))
-            elif(command[1] == 13):
-                makeSound(13)
-                scoreLaser2(chr(command[0]))
-        root.after(1000, ReadInSerial)
+                scoreLasers(chr(command[0]))
+        root.after(1, ReadInSerial)
     else:
-        root.after(1000, ReadInSerial)
+        root.after(1, ReadInSerial)
 
-def garagePoints():
+def updateGarage():
     global redGarage
     global blueGarage
     global blueTotalPylons
     global redTotalPylons
     if(run):
         if(blueTotalPylons >= 3 and (not blueGarage)):
-            ser.write(b'14')
+            startOpenBlueGarage()
+            root.after(300,endOpenBlueGarage)
             blueGarage = True
         elif(redTotalPylons >= 3 and (not redGarage) ):
-            ser.write(b'15')
+            startOpenRedGarage()
+            root.after(300,endOpenRedGarage)
             redGarage = True
         if(blueTotalPylons < 3 and blueGarage):
-            ser.write(b'14')
+            startCloseBlueGarage()
+            root.after(300, endCloseBlueGarage)
             blueGarage = False
         elif(redTotalPylons < 3 and redGarage):
-            ser.write(b'15')
+            startCloseRedGarage()
+            root.after(300, endCloseRedGarage)
             redGarage = False
 
 def scoreEndgame():
@@ -460,79 +496,299 @@ def initSound():
     pygame.mixer.init()
     pygame.mixer.music.load(file)
 
-def scoreLaser1(team):
+def scoreLasers(team):
     global auton
-    global blueLaser1
-    global redLaser1
-
+    global blueLaserCount
+    global redLaserCount
     global jediPoints
     global sithPoints
 
+
     if(auton):
         if(team == 'B'):
-           if(blueLaser1 == False):
+           blueLaserCount += 1
+           blueLaserCount = blueLaserCount % 2
+           if(blueLaserCount):
+                jediPoints += 10
+                startOpenBlueGarage()
+                root.after(300, endOpenBlueGarage)
+           else:
                 jediPoints += 20
-                blueLaser1 = True
-                ser.write(b'14')
 
         elif(team == 'R'):
-            if(redLaser1 == False):
+           startOpenRedGarage()
+           redLaserCount = blueLaserCount % 2
+           if(redLaserCount):
+                startOpenRedGarage()
+                root.after(300, endOpenRedGarage)
+                sithPoints += 10
+           else:
                 sithPoints += 20
-                redLaser1 = True
-                ser.write(b'15')
     else:
+        blueLaserCount += 1
+        blueLaserCount = blueLaserCount % 2
         if(team == 'B'):
-            if(blueLaser1 == False):
-                jediPoints += 200
-                blueLaser1 = True
+            if(not blueLaserCount):
+                if(blueGarage):
+                    jediPoints += 30
+                    startCloseBlueGarage()
+                    root.after(300, endCloseBlueGarage)
+                    root.after(10000,startOpenBlueGarage())
+                    root.after(10300, endOpenBlueGarage)
         elif(team == 'R'):
-            if(redLaser1 == False):
-                sithPoints += 200
-                redLaser1 = True
+            if(not redLaserCount):
+                if(redGarage):
+                    sithPoints += 30
+                    startCloseBlueGarage()
+                    root.after(300, endCloseBlueGarage)
+                    root.after(10000,startOpenBlueGarage())
+                    root.after(10300, endOpenBlueGarage)
 
-def scoreLaser2(team):
-    global auton
-    global blueLaser2
-    global redLaser2
+def loadBlueGarage():
+    global pylon1
+    global pylon2
+    global pylon3
+    global pylon4
+    global pylon5
 
-    if(auton):
-        if(team == 'B'):
-           if(blueLaser2 == False):
-                jediPoints += 100
-                blueLaser2 = True
-        elif(team == 'R'):
-            if(redLaser2 == False):
-                sithPoints += 100
-                redLaser2 = True
+    if(pylon1 == 'B'):
+        pylon1 = 'N'
+    if(pylon2 == 'B'):
+        pylon2 = 'N'
+    if(pylon3 == 'B'):
+        pylon3 = 'N'
+    if(pylon4 == 'B'):
+        pylon4 = 'N'
+    if(pylon5 == 'B'):
+        pylon5 = 'N'
+
+def loadRedGarage():
+    global pylon1
+    global pylon2
+    global pylon3
+    global pylon4
+    global pylon5
+
+    if(pylon1 == 'R'):
+        pylon1 = 'N'
+    if(pylon2 == 'R'):
+        pylon2 = 'N'
+    if(pylon3 == 'R'):
+        pylon3 = 'N'
+    if(pylon4 == 'R'):
+        pylon4 = 'N'
+    if(pylon5 == 'R'):
+        pylon5 = 'N'
+
+def startOpenBlueGarage():
+    ser.write(b'14')
+
+def startOpenRedGarage():
+    ser.write(b'15')
+
+def endOpenBlueGarage():
+    ser.write(b'16')
+
+def endOpenRedGarage():
+    ser.write(b'17')
+
+def startCloseBlueGarage():
+    ser.write(b'18')
+
+def startCloseRedGarage():
+    ser.write(b'19')
+
+def endCloseBlueGarage():
+    ser.write(b'20')
+
+def endCloseRedGarage():
+    ser.write(b'21')
+
+def resetPylon1():
+    ser.write(b'22')
+
+def resetPylon2():
+    ser.write(b'23')
+
+def resetPylon3():
+    ser.write(b'24')
+
+def resetPylon4():
+    ser.write(b'25')
+
+def resetPylon5():
+    ser.write(b'26')
+
+def CDPylon1():
+    ser.write(b'27')
+
+def CDPylon2():
+    ser.write(b'28')
+
+def CDPylon3():
+    ser.write(b'29')
+
+def CDPylon4():
+    ser.write(b'30')
+
+def CDPylon5():
+    ser.write(b'31')
+
+def OffCDPylon1():
+    ser.write(b'27')
+
+def OffCDPylon2():
+    ser.write(b'28')
+
+def OffCDPylon3():
+    ser.write(b'29')
+
+def OffCDPylon4():
+    ser.write(b'30')
+
+def OffCDPylon5():
+    ser.write(b'31')
+
 
 def resetPylon1CD():
     global pylon1CD
     pylon1CD = False
+    OffCDPylon1()
 
 def resetPylon2CD():
     global pylon2CD
     pylon2CD = False
+    OffCDPylon2()
 
 def resetPylon3CD():
     global pylon3CD
     pylon3CD = False
+    OffCDPylon3()
 
 def resetPylon4CD():
     global pylon4CD
     pylon4CD = False
+    OffCDPylon4()
 
 def resetPylon5CD():
     global pylon5CD
     pylon5CD = False
+    OffCDPylon5()
+
+"""
+def restart_program():
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+"""
+
+def addBluePoint():
+    global jediPoints
+    jediPoints += 1
+    updatePoints()
+
+def addRedPoint():
+    global sithPoints
+    sithPoints += 1
+    updatePoints()
+
+def addBlue10Points():
+    global jediPoints
+    jediPoints += 10
+    updatePoints()
+
+def addRed10Points():
+    global sithPoints
+    sithPoints += 10
+    updatePoints()
+
+def penaltyBluePoint():
+    global bluePenalty
+    global jediPoints
+    jediPoints -= 1
+    bluePenalty -= 1
+    updatePoints()
+
+def penaltyRedPoint():
+    global redPenalty
+    global sithPoints
+    redPenalty -= 1
+    sithPoints -= 1
+    updatePoints()
+
+def penaltyBlue10Points():
+    global bluePenalty
+    global jediPoints
+    bluePenalty -= 10
+    jediPoints -= 10
+    updatePoints()
+
+def penaltyRed10Points():
+    global redPenalty
+    global sithPoints
+    redPenalty -= 10
+    sithPoints -= 10
+    updatePoints()
+
+def ResetBluePylons():
+    global pylon1
+    global pylon2
+    global pylon3
+    global pylon4
+    global pylon5
+    global blueTotalPylons
+
+    if(pylon1 == 'B'):
+        resetPylon1()
+        pylon1 = 'N'
+    if(pylon2 == 'B'):
+        resetPylon2()
+        pylon2 = 'N'
+    if(pylon3 == 'B'):
+        resetPylon3()
+        pylon3 = 'N'
+    if(pylon4 == 'B'):
+        resetPylon4()
+        pylon4 = 'N'
+    if(pylon5 == 'B'):
+        resetPylon5()
+        pylon5 = 'N'
+
+    blueTotalPylons = 0
+
+def ResetRedPylons():
+    global pylon1
+    global pylon2
+    global pylon3
+    global pylon4
+    global pylon5
+    global redTotalPylons
+
+    if(pylon1 == 'R'):
+        resetPylon1()
+        pylon1 = 'N'
+    if(pylon2 == 'R'):
+        resetPylon2()
+        pylon2 = 'N'
+    if(pylon3 == 'R'):
+        resetPylon3()
+        pylon3 = 'N'
+    if(pylon4 == 'R'):
+        resetPylon4()
+        pylon4 = 'N'
+    if(pylon5 == 'R'):
+        resetPylon5()
+        pylon5 = 'N'
+
+    redTotalPylons = 0
+
+
 
 #Define a tkinter GUI frame, get the screen resolution, then use it to set the size of the GUI.
 root = tkinter.Tk()
 
-#subprocess.call(['soundboard_game/turretted.sh'])
-
 #Read in data from the serial port- '/dev/tty should be changed to whatever
 #  COM port you plan on using
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=0)
+ser = serial.Serial('/dev/ttyACM1', 9600, timeout=0)
 
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
@@ -540,6 +796,15 @@ root.geometry(str (screen_width) + "x" + str (screen_height))
 
 #Set the GUI frame
 app = Game(root)
+root.bind('<q>', addBluePoint)
+root.bind('<w>', addBlue10Points)
+root.bind('<e>', penaltyBluePoint)
+root.bind('<r>', penaltyBlue10Points)
+
+root.bind('<a>', addRedPoint)
+root.bind('<s>', addRed10Points)
+root.bind('<d>', penaltyRedPoint)
+root.bind('<f>', penaltyRed10Points)
 
 #Open and set the background image
 im = Image.open('star_wars_img.jpg')
@@ -561,6 +826,13 @@ startButton = Button(root, text="Start", command=StartStop, bg = "green", highli
 startButton.pack
 startButton.place(x=screen_width/2, y=.9*screen_height/2)
 
+#Initialize the reset button
+"""
+startButton = Button(root, text="Restart", command=restart_program, bg = "yellow", highlightthickness=0, font = "Times " + str(int(20*ratio)))
+startButton.pack
+startButton.place(x=0.8*screen_width/2, y=.9*screen_height/2)
+"""
+
 #Initialize the Sith point counter
 SithText = Label(root, text="SITH\n0", bg = "black", fg = "red", font = "FranklinGothic "+ str(int(50*ratio)) + " bold")
 SithText.pack()
@@ -572,6 +844,8 @@ JediText.pack()
 JediText.place(y = screen_height/8, x = 6*screen_width/8)
 
 #Start all the routines
+
+updateGarage()
 update_auton_clock()
 initSound()
 ReadInSerial()
